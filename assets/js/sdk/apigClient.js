@@ -124,7 +124,6 @@ apigClientFactory.newClient = function (config) {
 
         apiGateway.core.utils.assertParametersDefined(params, ['object', 'bucket', 'Content-Type', 'x-amz-meta-customLabels'], ['body']);
 
-
         var uploadBucketObjectPutRequest = {
             verb: 'put'.toUpperCase(),
             path: pathComponent + uritemplate('/upload/{bucket}/{object}').expand(apiGateway.core.utils.parseParametersToObject(params, ['object', 'bucket', ])),
