@@ -11,7 +11,7 @@ HOST = 'search-photos-fv2gi6zwbxcko2nyqvdttkau7q.us-east-1.es.amazonaws.com'
 INDEX = 'photos'
 
 
-#opensearch query
+# opensearch query
 def query(keyword):
     q = {
         'size': 1000,
@@ -19,7 +19,7 @@ def query(keyword):
             'term': {
                 'labels': {
                     'value': keyword
-                }  
+                }
             }
         }
     }
@@ -28,20 +28,19 @@ def query(keyword):
         'host': HOST,
         'port': 443
     }],
-                        http_auth=get_awsauth(REGION, 'es'),
-                        use_ssl=True,
-                        verify_certs=True,
-                        connection_class=RequestsHttpConnection)
+        http_auth=get_awsauth(REGION, 'es'),
+        use_ssl=True,
+        verify_certs=True,
+        connection_class=RequestsHttpConnection)
 
     res = client.search(index=INDEX, body=q)
     hits = res['hits']['hits']
-    
+
     results = []
     for hit in hits:
         results.append(hit['_source']['objectKey'])
-        
-    return results
 
+    return results
 
 
 def get_awsauth(region, service):
@@ -55,13 +54,12 @@ def get_awsauth(region, service):
 
 def lambda_handler(event, context):
     client = boto3.client('lexv2-runtime')
-    
+
     msg_from_user = event['queryStringParameters']['q']
     msg_from_user.replace('{', '')
     msg_from_user.replace('}', '')
-    
-    #text submitted from frontend searchbar #modify this 
 
+    # text submitted from frontend searchbar #modify this
 
     # Initiate conversation with Lex
     response = client.recognize_text(
@@ -70,11 +68,11 @@ def lambda_handler(event, context):
         localeId='en_US',
         sessionId='testuser',
         text=msg_from_user)
-    
+
     slots = response.get('sessionState', {}).get('intent', {}).get('slots', {})
-    
+
     search_keywords = []
-    
+
     # if len(slots) == 0:
     #     return {
     #         'statusCode': 200,
@@ -83,30 +81,30 @@ def lambda_handler(event, context):
     #         },
     #         'body': "no search"
     #     }
-        
-    # elif 
-    
-    
+
+    # elif
+
     if 'search-keyword' in slots:
         if 'value' in slots['search-keyword']:
-            search_keywords.append(slots['search-keyword']['value'].get('interpretedValue'))
+            search_keywords.append(
+                slots['search-keyword']['value'].get('interpretedValue'))
     if slots['search-keyword-2']:
         if 'value' in slots['search-keyword-2']:
-            search_keywords.append(slots['search-keyword-2']['value'].get('interpretedValue'))
+            search_keywords.append(
+                slots['search-keyword-2']['value'].get('interpretedValue'))
     results = []
-    
+
     for keyword in search_keywords:
         if keyword[-1] == 's':
             keyword = keyword[:-1]
         results += query(keyword)
-    
-    
+
     for i in range(len(results)):
         results[i] = "https://b2photostorage.s3.us-east-1.amazonaws.com/" + results[i]
-        
+
     # for result in results:
     #     result = "https://b2photostorage.s3.us-east-1.amazonaws.com/" + result
-        
+
     return {
         'statusCode': 200,
         'headers': {
@@ -114,4 +112,3 @@ def lambda_handler(event, context):
         },
         'body': json.dumps(results)
     }
-    

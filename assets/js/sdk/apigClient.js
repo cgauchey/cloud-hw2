@@ -53,7 +53,7 @@ apigClientFactory.newClient = function (config) {
 
 
     // extract endpoint and path from url
-    var invokeUrl = 'https://lua10x6wej.execute-api.us-east-1.amazonaws.com/beta';
+    var invokeUrl = 'https://lua10x6wej.execute-api.us-east-1.amazonaws.com/fourth';
     var endpoint = /(^https?:\/\/[^\/]+)/g.exec(invokeUrl)[1];
     var pathComponent = invokeUrl.substring(endpoint.length);
 
@@ -123,6 +123,7 @@ apigClientFactory.newClient = function (config) {
         if(additionalParams === undefined) { additionalParams = {}; }
 
         apiGateway.core.utils.assertParametersDefined(params, ['object', 'bucket', 'Content-Type', 'x-amz-meta-customLabels'], ['body']);
+
 
         var uploadBucketObjectPutRequest = {
             verb: 'put'.toUpperCase(),
