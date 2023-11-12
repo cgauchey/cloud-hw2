@@ -1,0 +1,40 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Import existing S3 Buckets and Lambda Functions
+
+Resources:
+
+  MyS3Bucket1:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    Properties:
+      BucketName: b1photofrontend  # Replace with your actual bucket name
+
+  MyS3Bucket2:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    Properties:
+      BucketName: b2photostorage  # Replace with your actual bucket name
+
+  MyLambdaFunction1:
+    Type: AWS::Lambda::Function
+    DeletionPolicy: Retain
+    Properties:
+      FunctionName: LF1_photo  # Replace with your actual function name
+      Handler: lambda_function.lambda_handler  # Replace with the actual handler
+      Role: arn:aws:iam::062168545775:role/service-role/LF1_photo-role-tx4jez9o  # Replace with the actual role ARN
+      Runtime: python3.9  # Replace with the actual runtime
+      Code:
+        S3Bucket: photolambda  # Replace with the bucket containing your Lambda code
+        S3Key: index-photos.zip  # Replace with the S3 key of your Lambda code
+
+  MyLambdaFunction2:
+    Type: AWS::Lambda::Function
+    DeletionPolicy: Retain
+    Properties:
+      FunctionName: search-photos  # Replace with your actual function name
+      Handler: lambda_function.lambda_handler  # Replace with the actual handler
+      Role: arn:aws:iam::062168545775:role/service-role/search-photos-role-x4opduy2  # Replace with the actual role ARN
+      Runtime: python3.9  # Replace with the actual runtime
+      Code:
+        S3Bucket: photolambda  # Replace with the bucket containing your Lambda code
+        S3Key: search-photos.zip  # Replace with the S3 key of your Lambda code
