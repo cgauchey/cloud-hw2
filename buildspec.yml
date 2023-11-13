@@ -6,7 +6,7 @@ phases:
       - echo "Building the Lambda functions"
       # Add any build commands required for your Lambda functions here
       - cd backend/LF1_photo
-      - zip -r LF1.zip *
+      - zip -r9 LF1.zip *
       - aws lambda update-function-code --function-name "LF1_index" --zip-file "fileb://LF1.zip"
       - echo "LF1 updates"
       # - mv LF1.zip .. #
