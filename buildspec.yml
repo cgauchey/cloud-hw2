@@ -5,6 +5,7 @@ phases:
     commands:
       - echo "Building the Lambda functions"
       # Add any build commands required for your Lambda functions here
+      - cd backend
       - cd LF1_photo
       - zip -r LF1.zip .
       - mv LF1.zip ..
@@ -12,8 +13,8 @@ phases:
       - zip -r LF2.zip .
       - mv LF2.zip ..
       - cd ../
-      - aws s3 cp LF1.zip s3://photolambda
-      - aws s3 cp LF2.zip s3://photolambda
+      # - aws s3 cp LF1.zip s3://photolambda
+      # - aws s3 cp LF2.zip s3://photolambda
       - ls -al
   post_build:
     commands:
