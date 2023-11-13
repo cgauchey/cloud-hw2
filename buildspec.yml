@@ -5,19 +5,19 @@ phases:
     commands:
       - echo "Building the Lambda functions"
       # Add any build commands required for your Lambda functions here
-      - cd backend
-      - cd LF1_photo
-      - zip -r LF1.zip .
-      - mv LF1.zip ..
-      - cd ../search-photos
-      - zip -r LF2.zip .
-      - mv LF2.zip ..
-      - cd ../
-      # - aws s3 cp LF1.zip s3://photolambda
-      # - aws s3 cp LF2.zip s3://photolambda
-      - ls -al
+      - cd backend/LF1_photo
+      - zip -r LF1.zip *
       - aws lambda update-function-code --function-name "LF1_index" --zip-file "fileb://LF1.zip"
-      - aws lambda update-function-code --function-name "LF2_search" --zip-file "fileb://LF2.zip"
+      - echo "LF1 updates"
+      # - mv LF1.zip ..
+      # - cd ../search-photos
+      # - zip -r LF2.zip .
+      # - mv LF2.zip ..
+      # - cd ../
+      # # - aws s3 cp LF1.zip s3://photolambda
+      # # - aws s3 cp LF2.zip s3://photolambda
+      # - ls -al
+      # - aws lambda update-function-code --function-name "LF2_search" --zip-file "fileb://LF2.zip"
   # post_build:
   #   commands:
   #     - echo "Updating Lambda function code"
