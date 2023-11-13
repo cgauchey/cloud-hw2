@@ -1,0 +1,179 @@
+AWSTemplateFormatVersion : 2010-09-09
+Resources:
+  b2S3Bucket:
+    Type: AWS::S3::Bucket
+    DependsOn:
+      - LF1LambdaPermission
+    Properties:
+      BucketName: b2s3photostorage
+      NotificationConfiguration:
+        LambdaConfigurations:
+          - Event: s3:ObjectCreated:*
+            Function: !GetAtt LF1Lambda.Arn
+      CorsConfiguration:
+        CorsRules:
+          - AllowedHeaders: ['*']
+            AllowedMethods: [PUT, HEAD, GET]
+            AllowedOrigins: ['*']
+
+  LF1LambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: 'lambda:InvokeFunction'
+      FunctionName: !Ref LF1Lambda
+      Principal: s3.amazonaws.com
+      SourceArn: 'arn:aws:s3:::b2s3photostorage'
+      SourceAccount: !Ref AWS::AccountId
+
+  LF2LambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: 'lambda:InvokeFunction'
+      FunctionName: !Ref LF2Lambda
+      Principal: apigateway.amazonaws.com	
+      SourceArn: !Sub arn:aws:execute-api:us-east-1:062168545775:${APIGatewayRestAPI}/*/GET/search
+      SourceAccount: !Ref AWS::AccountId
+
+  LF2LambdaPermission2:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: 'lambda:InvokeFunction'
+      FunctionName: !Ref LF2Lambda
+      Principal: lexv2.amazonaws.com
+      SourceArn: 'arn:aws:lex:us-east-1:062168545775:bot-alias/BUQZ2LIDMC/TSTALIASID'
+      SourceAccount: !Ref AWS::AccountId
+
+  LF1role:
+    Type: AWS::IAM::Role
+    Properties:
+      ManagedPolicyArns: 
+          - "arn:aws:iam::aws:policy/AmazonS3FullAccess"
+          - "arn:aws:iam::aws:policy/AmazonRekognitionFullAccess"
+          - "arn:aws:iam::aws:policy/AmazonOpenSearchServiceFullAccess"
+          - "arn:aws:iam::aws:policy/AmazonLexFullAccess"
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - lambda.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      Policies:
+        - PolicyName: allowLogging
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+            - Effect: Allow
+              Action:
+              - logs:*
+              Resource: arn:aws:logs:*:*:*
+        - PolicyName: getObjects
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+            - Effect: Allow
+              Action:
+              - s3:GetObject
+              Resource: 'arn:aws:s3:::b2s3photostorage'
+
+  LF1Lambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      Description: "Index Photos Lambda Function"
+      FunctionName: LF1_index
+      Handler: lambda_function.lambda_handler
+      MemorySize: 128
+      Role: !GetAtt LF1role.Arn
+      Runtime: python3.11
+      Timeout: 30
+      Code:
+        S3Bucket: photolambda
+        S3Key: LF1.zip
+
+  b1S3Bucket:
+    Type: AWS::S3::Bucket
+    Properties: 
+      BucketName: b1s3frontendfiles
+      CorsConfiguration:
+        CorsRules:
+          - AllowedHeaders: ['*']
+            AllowedMethods: [PUT, HEAD, GET]
+            AllowedOrigins: ['*']
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: false
+        BlockPublicPolicy: false
+        IgnorePublicAcls: false
+        RestrictPublicBuckets: false
+
+  LF2Lambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      Description: "Search Photos Lambda Function"
+      FunctionName: LF2_search
+      Handler: lambda_function.lambda_handler
+      MemorySize: 128
+      Role: !GetAtt LF2role.Arn
+      Runtime: python3.11
+      Timeout: 30
+      Code:
+        S3Bucket: photolambda
+        S3Key: LF2.zip
+
+  LF2role:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: "Allow"
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns: 
+        - "arn:aws:iam::aws:policy/AmazonS3FullAccess"
+        - "arn:aws:iam::aws:policy/AmazonRekognitionFullAccess"
+        - "arn:aws:iam::aws:policy/AmazonOpenSearchServiceFullAccess"
+        - "arn:aws:iam::aws:policy/AmazonLexFullAccess"
+      Policies:
+        - PolicyName: AllLambdaFunctionPolicy2
+          PolicyDocument:
+            Statement:
+              - Action: [logs:CreateLogGroup, logs:CreateLogStream, logs:PutLogEvents]
+                Effect: Allow
+                Resource: "arn:aws:logs:*:*:*"
+
+  APIGatewayRestAPI:
+    Type: 'AWS::ApiGateway::RestApi'
+    Properties:
+      Name: AIPhotoSearch2
+      BodyS3Location:
+        Bucket: "photolambda"
+        Key: "AIPhotoSearchSwagger.yaml"
+
+  OpenSearchDomain:
+    Type: AWS::OpenSearchService::Domain
+    Properties:
+      DomainName: "photos2"  # Replace with your domain name
+      ClusterConfig:
+        InstanceType: "r6g.large.search"
+        InstanceCount: 3
+        DedicatedMasterEnabled: true
+        DedicatedMasterType: "m6g.large.search"
+        DedicatedMasterCount: 3
+        ZoneAwarenessEnabled: true
+        ZoneAwarenessConfig:
+          AvailabilityZoneCount: 3
+      EBSOptions:
+        EBSEnabled: true
+        VolumeType: "gp3"
+        VolumeSize: 100
+        Iops: 3000
+        Throughput: 125
+      AdvancedOptions:
+        "rest.action.multi.allow_explicit_index": "true"  # Allow references to indices in HTTP request bodies
+        "indices.fielddata.cache.size": "20"  # Fielddata cache allocation
+        "indices.query.bool.max_clause_count": "1024"  # Max clause count
+      SnapshotOptions:
+        AutomatedSnapshotStartHour: 0
