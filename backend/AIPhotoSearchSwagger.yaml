@@ -1,0 +1,202 @@
+openapi: "3.0.1"
+info:
+  title: "AI Photo Search 2"
+  description: "AI Photo Search application, built during the Cloud and Big Data course\
+    \ at Columbia University."
+  version: "1.0.0"
+servers:
+- url: "https://lua10x6wej.execute-api.us-east-1.amazonaws.com/{basePath}"
+  variables:
+    basePath:
+      default: "fourth"
+paths:
+  /upload/{bucket}/{object}:
+    put:
+      parameters:
+      - name: "Content-Type"
+        in: "header"
+        schema:
+          type: "string"
+      - name: "x-amz-meta-customLabels"
+        in: "header"
+        schema:
+          type: "string"
+      - name: "object"
+        in: "path"
+        required: true
+        schema:
+          type: "string"
+      - name: "bucket"
+        in: "path"
+        required: true
+        schema:
+          type: "string"
+      responses:
+        "200":
+          description: "200 response"
+          headers:
+            Access-Control-Allow-Origin:
+              schema:
+                type: "string"
+            content-type:
+              schema:
+                type: "string"
+          content: {}
+      x-amazon-apigateway-integration:
+        credentials: "arn:aws:iam::062168545775:role/api_role"
+        httpMethod: "PUT"
+        uri: "arn:aws:apigateway:us-east-1:s3:path/{bucket}/{object}"
+        responses:
+          default:
+            statusCode: "200"
+            responseParameters:
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+        requestParameters:
+          integration.request.path.object: "method.request.path.object"
+          integration.request.header.x-amz-meta-customLabels: "method.request.header.x-amz-meta-customLabels"
+          integration.request.path.bucket: "method.request.path.bucket"
+          integration.request.header.Content-Type: "method.request.header.Content-Type"
+        passthroughBehavior: "when_no_match"
+        contentHandling: "CONVERT_TO_BINARY"
+        type: "aws"
+    options:
+      parameters:
+      - name: "bucket"
+        in: "path"
+        required: true
+        schema:
+          type: "string"
+      - name: "object"
+        in: "path"
+        required: true
+        schema:
+          type: "string"
+      responses:
+        "200":
+          description: "200 response"
+          headers:
+            Access-Control-Allow-Origin:
+              schema:
+                type: "string"
+            Access-Control-Allow-Methods:
+              schema:
+                type: "string"
+            Access-Control-Allow-Headers:
+              schema:
+                type: "string"
+          content: {}
+      x-amazon-apigateway-integration:
+        responses:
+          default:
+            statusCode: "200"
+            responseParameters:
+              method.response.header.Access-Control-Allow-Methods: "'OPTIONS,PUT'"
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,x-amz-meta-customLabels'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+            contentHandling: "CONVERT_TO_TEXT"
+        requestTemplates:
+          application/json: "{\"statusCode\": 200}"
+        passthroughBehavior: "when_no_match"
+        contentHandling: "CONVERT_TO_TEXT"
+        type: "mock"
+  /search:
+    get:
+      operationId: "searchPhotos"
+      parameters:
+      - name: "q"
+        in: "query"
+        schema:
+          type: "string"
+      responses:
+        "500":
+          description: "500 response"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "200":
+          description: "200 response"
+          headers:
+            Access-Control-Allow-Origin:
+              schema:
+                type: "string"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SearchResponse"
+        "403":
+          description: "403 response"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      x-amazon-apigateway-integration:
+        httpMethod: "POST"
+        uri: "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:062168545775:function:LF2_search/invocations"
+        responses:
+          default:
+            statusCode: "200"
+            responseParameters:
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+        requestTemplates:
+          application/json: "{\n    \"q\": \"$input.params('q')\"\n}\n"
+        passthroughBehavior: "when_no_templates"
+        contentHandling: "CONVERT_TO_TEXT"
+        type: "aws"
+    options:
+      responses:
+        "200":
+          description: "200 response"
+          headers:
+            Access-Control-Allow-Origin:
+              schema:
+                type: "string"
+            Access-Control-Allow-Methods:
+              schema:
+                type: "string"
+            Access-Control-Allow-Headers:
+              schema:
+                type: "string"
+          content: {}
+      x-amazon-apigateway-integration:
+        responses:
+          default:
+            statusCode: "200"
+            responseParameters:
+              method.response.header.Access-Control-Allow-Methods: "'GET,OPTIONS'"
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+        requestTemplates:
+          application/json: "{\"statusCode\": 200}"
+        passthroughBehavior: "when_no_match"
+        type: "mock"
+components:
+  schemas:
+    Error:
+      type: "object"
+      properties:
+        code:
+          type: "integer"
+          format: "int32"
+        message:
+          type: "string"
+    Photo:
+      type: "object"
+      properties:
+        url:
+          type: "string"
+        labels:
+          type: "array"
+          items:
+            type: "string"
+    SearchResponse:
+      type: "object"
+      properties:
+        results:
+          type: "array"
+          items:
+            $ref: "#/components/schemas/Photo"
+x-amazon-apigateway-binary-media-types:
+- "image/jpeg"
+- "image/png"
+- "image/jpg"
