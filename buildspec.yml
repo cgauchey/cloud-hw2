@@ -9,7 +9,7 @@ phases:
       - zip -r LF1.zip *
       - aws lambda update-function-code --function-name "LF1_index" --zip-file "fileb://LF1.zip"
       - echo "LF1 updates"
-      # - mv LF1.zip ..
+      # - mv LF1.zip .. #
       # - cd ../search-photos
       # - zip -r LF2.zip .
       # - mv LF2.zip ..
