@@ -53,6 +53,7 @@ def get_awsauth(region, service):
 
 
 def lambda_handler(event, context):
+    print("IN LAMDA HANDLER")
     client = boto3.client('lexv2-runtime')
 
     msg_from_user = event['queryStringParameters']['q']
